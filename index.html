@@ -20,8 +20,8 @@ We needed a solution that could work with forms while assuming business logic fo
 With models as a premise, most responsibilities can and should be placed on the model side.</p>
 <p>While there are already many libraries for building forms using MobX, they are all designed from a data serialization perspective rather than modeling,
 and have issues either being unable to use models (classes) or not properly separating data and form state management.<br>
-Furthermore, from my research, there wasn't a single one designed to allow type-safe implementation from both model and UI perspectives.<br>
-(Check out the <a href="#comparison-with-other-libraries">comparison</a> section for more details.)</p>
+Furthermore, from my research, there wasn't a single one designed to allow type-safe implementation from both model and UI ends.<br>
+(Check out the <a href="#alternatives">Alternatives</a> section for more details.)</p>
 <p>Given this background, I believe there are two fundamental challenges in implementing forms:</p>
 <ul>
 <li>Form-specific state management: When considering data separately, this only involves submission and validation processing. For example:
@@ -50,7 +50,7 @@ While this is something we'd prefer to delegate to a library since it's complex 
 <p>すでに MobX を活用したフォーム構築のためのライブラリは多く存在しているが、どれもモデリングではなくデータシリアライズの観点で設計されており、
 モデル(クラス)を使うことができないか、データとフォームの状態管理の分離が適切にできていないかのいずれかの問題がある。
 さらに私の調べた限り、モデルと UI の両方から型安全に実装ができる設計になっているものは1つとして存在しなかった。<br>
-(詳細は<a href="#comparison-with-other-libraries">比較</a>セクションを参照)</p>
+(詳細は<a href="#alternatives">既存ライブラリ</a>セクションを参照)</p>
 <p>ここまでの話を踏まえて、フォームを実装する上での本質的な課題は以下の2点であると考える。</p>
 <ul>
 <li>フォーム自体の状態管理: データを分離して考えれば、送信やバリデーション処理に関わるものだけである。例えば、
@@ -161,7 +161,7 @@ While this is something we'd prefer to delegate to a library since it's complex 
 
 <!-- prettier-ignore-end -->
 <hr>
-<a id="comparison-with-other-libraries" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Comparison with other libraries<a href="#comparison-with-other-libraries" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<a id="alternatives" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Alternatives<a href="#alternatives" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
 <li>Only two libraries are built with type safety in mind, and neither of them provides binding functionality.</li>
 <li>Only two libraries support class-based implementation, and neither of them provides binding functionality.</li>
 <li><strong>There isn't a single library that's properly usable.</strong></li>
@@ -172,7 +172,7 @@ While this is something we'd prefer to delegate to a library since it's complex 
 <th>Repository</th>
 <th>Stars</th>
 <th>Language</th>
-<th>Features</th>
+<th>Characteristics</th>
 </tr>
 </thead>
 <tbody>
@@ -250,35 +250,27 @@ While this is something we'd prefer to delegate to a library since it's complex 
 </tr>
 </tbody>
 </table>
-<p>Legend for the features:</p>
+<p>Legend:</p>
 <ul>
-<li><code>class</code> Can be implemented with classes? Including those with specific implementation requirements.</li>
-<li><code>binding</code> Provides binding functionality?</li>
-<li><code>typesafe</code> Has type-safe interfaces?</li>
+<li><code>class</code> Can be implemented with classes. Including those with specific implementation requirements.</li>
+<li><code>binding</code> Provides binding functionality.</li>
+<li><code>typesafe</code> Has type-safe interfaces.</li>
 </ul>
 <a id="roadmap-to-v01" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Roadmap to v0.1<a href="#roadmap-to-v01" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
-<li>[ ] Extensive documentation
+<li>[ ] Better way to implement delegation
 <ul>
-<li>UX of smart error reporting.</li>
-<li>APIs.</li>
-<li>Examples.</li>
+<li>Problem 1: Unlike <code>validate()</code>, <code>submit()</code> is more of an application layer responsibility.</li>
+<li>Problem 2: <code>connect()</code> is lengthy. We could make it a field decorator.</li>
 </ul>
 </li>
-<li>[ ] Make the initial value of <code>isDirty</code> controllable from the model side somehow
+<li>[ ] Support callbacks for form events
+<ul>
+<li>Use case: Display a toast message when the form is submitted. (Not a concern of a model nor a delegate)</li>
+</ul>
+</li>
+<li>[ ] Make the initial value of <code>isDirty</code> controllable from a model side somehow
 <ul>
 <li>Add a new <code>isCreate</code> property to the delegate?</li>
-</ul>
-</li>
-<li>[ ] Make the validation strategy configurable
-<ul>
-<li>Options: smart (default), submit, touch, change, blur, change-and-blur</li>
-<li>Option to force trigger validate on all nested forms?</li>
-</ul>
-</li>
-<li>[ ] Make the submission strategy configurable
-<ul>
-<li>Options: always, first-and-dirty, only-dirty</li>
-<li>Option to bypass submission when there are validation errors?</li>
 </ul>
 </li>
 <li>[ ] Computed validation errors &amp; per-field validations
@@ -287,10 +279,23 @@ While this is something we'd prefer to delegate to a library since it's complex 
 <li>Repurpose <code>validate()</code> for a time-consuming per-field validation (which results can be easily included in the <code>get errors()</code>).</li>
 </ul>
 </li>
-<li>[ ] Better way to implement delegate
+<li>[ ] Make the validation strategy configurable
 <ul>
-<li>Problem 1: Unlike <code>validate()</code>, <code>submit()</code> is more of an application layer responsibility.</li>
-<li>Problem 2: <code>connect()</code> is lengthy. We could make it a field decorator.</li>
+<li>Options: smart (default), submit, touch, change, blur, change-and-blur</li>
+<li>Option to force trigger validate on all sub-forms?</li>
+</ul>
+</li>
+<li>[ ] Make the submission strategy configurable
+<ul>
+<li>Options: always, first-and-dirty, only-dirty</li>
+<li>Option to bypass submission when there are validation errors?</li>
+</ul>
+</li>
+<li>[ ] Extensive documentation
+<ul>
+<li>UX of smart error reporting.</li>
+<li>APIs.</li>
+<li>Examples.</li>
 </ul>
 </li>
 <li>[ ] Add an integration with a data validation library
@@ -305,4 +310,4 @@ While this is something we'd prefer to delegate to a library since it's complex 
 <li>Error severity</li>
 </ul>
 <a id="license" class="tsd-anchor"></a><h2 class="tsd-anchor-link">License<a href="#license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><p>MIT</p>
-</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#form-model"><span>form-<wbr/>model</span></a><ul><li><a href="#packages"><span>Packages</span></a></li><li><a href="#premises"><span>Premises</span></a></li><li><a href="#design-principles"><span>Design principles</span></a></li><li><a href="#features"><span>Features</span></a></li><li><a href="#overview--model"><span>Overview — <wbr/>Model</span></a></li><li><a href="#overview--react"><span>Overview — <wbr/>React</span></a></li><li><a href="#comparison-with-other-libraries"><span>Comparison with other libraries</span></a></li><li><a href="#roadmap-to-v01"><span>Roadmap to v0.1</span></a></li><li><ul><li><a href="#other-ideas"><span>Other ideas</span></a></li></ul></li><li><a href="#license"><span>License</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html">Documentation</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><use href="assets/icons.svg#icon-chevronDown"></use></svg>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#form-model"><span>form-<wbr/>model</span></a><ul><li><a href="#packages"><span>Packages</span></a></li><li><a href="#premises"><span>Premises</span></a></li><li><a href="#design-principles"><span>Design principles</span></a></li><li><a href="#features"><span>Features</span></a></li><li><a href="#overview--model"><span>Overview — <wbr/>Model</span></a></li><li><a href="#overview--react"><span>Overview — <wbr/>React</span></a></li><li><a href="#alternatives"><span>Alternatives</span></a></li><li><a href="#roadmap-to-v01"><span>Roadmap to v0.1</span></a></li><li><ul><li><a href="#other-ideas"><span>Other ideas</span></a></li></ul></li><li><a href="#license"><span>License</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html">Documentation</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>
