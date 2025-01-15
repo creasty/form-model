@@ -50,7 +50,7 @@ While this is something we'd prefer to delegate to a library since it's complex 
 <p>すでに MobX を活用したフォーム構築のためのライブラリは多く存在しているが、どれもモデリングではなくデータシリアライズの観点で設計されており、
 モデル(クラス)を使うことができないか、データとフォームの状態管理の分離が適切にできていないかのいずれかの問題がある。
 さらに私の調べた限り、モデルと UI の両方から型安全に実装ができる設計になっているものは1つとして存在しなかった。<br>
-(詳細は<a href="#alternatives">既存ライブラリ</a>セクションを参照)</p>
+(詳細は <a href="#alternatives">Alternatives</a> セクションを参照)</p>
 <p>ここまでの話を踏まえて、フォームを実装する上での本質的な課題は以下の2点であると考える。</p>
 <ul>
 <li>フォーム自体の状態管理: データを分離して考えれば、送信やバリデーション処理に関わるものだけである。例えば、
@@ -142,12 +142,34 @@ While this is something we'd prefer to delegate to a library since it's complex 
 </ul>
 </details>
 <a id="features" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Features<a href="#features" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
-<li>Asynchronous submission (abortable)</li>
-<li>Asynchronous validation (abortable)</li>
-<li>Smart error reporting</li>
-<li>Nested and dynamic (array) forms</li>
-<li>Custom bindings</li>
-<li><a href="https://react.dev/">React</a> integration</li>
+<li>Asynchronous submission and validation
+<ul>
+<li>Composable from multiple sources.</li>
+<li>Cancellable with <a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal">AbortSignal</a>.</li>
+</ul>
+</li>
+<li>Nested and dynamic (array) forms
+<ul>
+<li>No bullsh*t. Just mutate models directly.</li>
+</ul>
+</li>
+<li>Custom bindings
+<ul>
+<li>Flexible and easy-to-create.</li>
+<li>Most cases can be implemented in less than 50 lines.</li>
+</ul>
+</li>
+<li>React integration
+<ul>
+<li>React hooks that automatically handle component lifecycle under the hood.</li>
+<li>Standard bindings for most common form elements.</li>
+</ul>
+</li>
+<li>Smart error reporting.
+<ul>
+<li>Original validation strategy for a supreme user experience.</li>
+</ul>
+</li>
 </ul>
 <hr>
 <a id="overview--model" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Overview — Model<a href="#overview--model" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><!-- prettier-ignore-start -->
@@ -161,18 +183,20 @@ While this is something we'd prefer to delegate to a library since it's complex 
 
 <!-- prettier-ignore-end -->
 <hr>
-<a id="alternatives" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Alternatives<a href="#alternatives" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
-<li>Only two libraries are built with type safety in mind, and neither of them provides binding functionality.</li>
-<li>Only two libraries support class-based implementation, and neither of them provides binding functionality.</li>
-<li><strong>There isn't a single library that's properly usable.</strong></li>
-</ul>
+<a id="alternatives" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Alternatives<a href="#alternatives" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><p>Criteria:
+[<strong>T</strong>] Type-safe interfaces.
+[<strong>B</strong>] Binding for UI.
+[<strong>C</strong>] Class-based implementation.</p>
 <table>
 <thead>
 <tr>
 <th>Repository</th>
 <th>Stars</th>
 <th>Language</th>
-<th>Characteristics</th>
+<th>Tests</th>
+<th>T</th>
+<th>B</th>
+<th>C</th>
 </tr>
 </thead>
 <tbody>
@@ -180,82 +204,112 @@ While this is something we'd prefer to delegate to a library since it's complex 
 <td><a href="https://github.com/foxhound87/mobx-react-form">mobx-react-form</a></td>
 <td><img src="https://img.shields.io/github/stars/foxhound87/mobx-react-form?style=flat" alt="GitHub stars"></td>
 <td><img src="https://img.shields.io/github/languages/top/foxhound87/mobx-react-form" alt="Language"></td>
-<td>binding</td>
+<td><a href="https://codecov.io/gh/foxhound87/mobx-react-form"><img src="https://img.shields.io/codecov/c/github/foxhound87/mobx-react-form/master.svg" alt="Codecov Coverage"></a></td>
+<td></td>
+<td>✓</td>
+<td></td>
 </tr>
 <tr>
 <td><a href="https://github.com/formstate/formstate">formstate</a></td>
 <td><img src="https://img.shields.io/github/stars/formstate/formstate?style=flat" alt="GitHub stars"></td>
 <td><img src="https://img.shields.io/github/languages/top/formstate/formstate" alt="Language"></td>
-<td>typesafe</td>
+<td>Good 👍</td>
+<td>✓</td>
+<td></td>
+<td></td>
 </tr>
 <tr>
 <td><a href="https://github.com/formstjs/formst">formst</a></td>
 <td><img src="https://img.shields.io/github/stars/formstjs/formst?style=flat" alt="GitHub stars"></td>
 <td><img src="https://img.shields.io/github/languages/top/formstjs/formst" alt="Language"></td>
-<td>binding</td>
+<td>None</td>
+<td></td>
+<td>✓</td>
+<td></td>
 </tr>
 <tr>
 <td><a href="https://github.com/eyedea-io/smashing-form">smashing-form</a></td>
 <td><img src="https://img.shields.io/github/stars/eyedea-io/smashing-form?style=flat" alt="GitHub stars"></td>
 <td><img src="https://img.shields.io/github/languages/top/eyedea-io/smashing-form" alt="Language"></td>
-<td>binding</td>
+<td>Bad</td>
+<td></td>
+<td>✓</td>
+<td></td>
 </tr>
 <tr>
 <td><a href="https://github.com/qiniu/formstate-x">formstate-x</a></td>
 <td><img src="https://img.shields.io/github/stars/qiniu/formstate-x?style=flat" alt="GitHub stars"></td>
 <td><img src="https://img.shields.io/github/languages/top/qiniu/formstate-x" alt="Language"></td>
-<td>typesafe</td>
+<td><a href="https://coveralls.io/github/qiniu/formstate-x?branch=master"><img src="https://coveralls.io/repos/github/qiniu/formstate-x/badge.svg?branch=master" alt="Coverage Status"></a></td>
+<td>✓</td>
+<td></td>
+<td></td>
 </tr>
 <tr>
 <td><a href="https://github.com/tdzl2003/mobx-form-validate">mobx-form-validate</a></td>
 <td><img src="https://img.shields.io/github/stars/tdzl2003/mobx-form-validate?style=flat" alt="GitHub stars"></td>
 <td><img src="https://img.shields.io/github/languages/top/tdzl2003/mobx-form-validate" alt="Language"></td>
-<td>class, typesafe</td>
+<td>None</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
 </tr>
 <tr>
 <td><a href="https://github.com/kentik/mobx-form">mobx-form</a></td>
 <td><img src="https://img.shields.io/github/stars/kentik/mobx-form?style=flat" alt="GitHub stars"></td>
 <td><img src="https://img.shields.io/github/languages/top/kentik/mobx-form" alt="Language"></td>
-<td>binding</td>
+<td>None</td>
+<td></td>
+<td>✓</td>
+<td></td>
 </tr>
 <tr>
 <td><a href="https://github.com/alexhisen/mobx-schema-form">mobx-schema-form</a></td>
 <td><img src="https://img.shields.io/github/stars/alexhisen/mobx-schema-form?style=flat" alt="GitHub stars"></td>
 <td><img src="https://img.shields.io/github/languages/top/alexhisen/mobx-schema-form" alt="Language"></td>
-<td>-</td>
+<td>Bad</td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr>
 <td><a href="https://github.com/Yoskutik/mobx-form-schema">mobx-form-schema</a></td>
 <td><img src="https://img.shields.io/github/stars/Yoskutik/mobx-form-schema?style=flat" alt="GitHub stars"></td>
 <td><img src="https://img.shields.io/github/languages/top/Yoskutik/mobx-form-schema" alt="Language"></td>
-<td>class</td>
+<td><img src="https://raw.githubusercontent.com/Yoskutik/mobx-form-schema/master/badges/coverage-jest%20coverage.svg" alt="Jest coverage"></td>
+<td></td>
+<td></td>
+<td>✓</td>
 </tr>
 <tr>
 <td><a href="https://github.com/alexhisen/mobx-form-store">mobx-form-store</a></td>
 <td><img src="https://img.shields.io/github/stars/alexhisen/mobx-form-store?style=flat" alt="GitHub stars"></td>
 <td><img src="https://img.shields.io/github/languages/top/alexhisen/mobx-form-store" alt="Language"></td>
-<td>-</td>
+<td>Good 👍</td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr>
 <td><a href="https://github.com/marvinhagemeister/mobx-form-reactions">mobx-form-reactions</a></td>
 <td><img src="https://img.shields.io/github/stars/marvinhagemeister/mobx-form-reactions?style=flat" alt="GitHub stars"></td>
 <td><img src="https://img.shields.io/github/languages/top/marvinhagemeister/mobx-form-reactions" alt="Language"></td>
-<td>-</td>
+<td>None</td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr>
 <td>...and many more</td>
 <td>&lt; 10 stars</td>
 <td></td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </tbody>
 </table>
-<p>Legend:</p>
-<ul>
-<li><code>class</code> Can be implemented with classes. Including those with specific implementation requirements.</li>
-<li><code>binding</code> Provides binding functionality.</li>
-<li><code>typesafe</code> Has type-safe interfaces.</li>
-</ul>
 <a id="roadmap-to-v01" class="tsd-anchor"></a><h2 class="tsd-anchor-link">Roadmap to v0.1<a href="#roadmap-to-v01" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
 <li>[ ] Better way to implement delegation
 <ul>
