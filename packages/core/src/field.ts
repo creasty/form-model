@@ -1,23 +1,22 @@
 import { action, computed, makeObservable, observable } from "mobx";
 import { v4 as uuidV4 } from "uuid";
-import type { Form } from "./Form";
-import { ErrorMap } from "./validation";
+import type { Validator } from "@form-model/validation";
 
 export class FormField {
   readonly id = uuidV4();
   readonly fieldName: string;
-  readonly #form: Form<unknown>;
-  readonly #formErrors: ErrorMap;
+  readonly #validator: Validator<any>;
+  readonly #getFinalizationDelayMs: () => number;
   readonly #isTouched = observable.box(false);
   readonly #changeType = observable.box<FormField.ChangeType | null>(null);
   readonly #isErrorReported = observable.box(false);
   #timerId: number | null = null;
 
-  constructor(args: { form: Form<any>; formErrors: ErrorMap; fieldName: string }) {
+  constructor(args: { fieldName: string; validator: Validator<any>; getFinalizationDelayMs: () => number }) {
     makeObservable(this);
-    this.#form = args.form;
-    this.#formErrors = args.formErrors;
     this.fieldName = args.fieldName;
+    this.#validator = args.validator;
+    this.#getFinalizationDelayMs = args.getFinalizationDelayMs;
   }
 
   /** Whether the field is touched */
@@ -44,7 +43,7 @@ export class FormField {
 
   @computed.struct
   get errors() {
-    return this.#formErrors.get(this.fieldName) ?? null;
+    return this.#validator.errors.get(this.fieldName) ?? null;
   }
 
   @computed
@@ -58,15 +57,33 @@ export class FormField {
   }
 
   @action
+  reset() {
+    this.#changeType.set(null);
+    this.#isTouched.set(false);
+    this.#isErrorReported.set(false);
+    this.#cancelFinalizeChangeWithDelay();
+  }
+
+  @action
   markAsTouched() {
     this.#isTouched.set(true);
   }
 
   @action
   markAsChanged(type: FormField.ChangeType = "final") {
-    this.#form.markAsDirty();
     this.#changeType.set(type);
-    this.#isErrorReported.set(type !== "intermediate");
+
+    switch (type) {
+      case "final": {
+        this.#cancelFinalizeChangeWithDelay();
+        this.#isErrorReported.set(true);
+        break;
+      }
+      case "intermediate": {
+        this.#finalizeChangeWithDelay();
+        break;
+      }
+    }
   }
 
   @action
@@ -74,31 +91,21 @@ export class FormField {
     this.#isErrorReported.set(true);
   }
 
-  @action
-  reset() {
-    this.#changeType.set(null);
-    this.#isTouched.set(false);
-    this.#isErrorReported.set(false);
-    this.cancelDelayedValidation();
-  }
-
-  validate() {
-    this.cancelDelayedValidation();
-    this.#form.validate({ force: true });
-
+  finalizeChangeIfNeeded() {
+    this.#cancelFinalizeChangeWithDelay();
     if (this.isIntermediate) {
       this.markAsChanged("final");
     }
   }
 
-  validateWithDelay() {
-    this.cancelDelayedValidation();
+  #finalizeChangeWithDelay() {
+    this.#cancelFinalizeChangeWithDelay();
     this.#timerId = +setTimeout(() => {
-      this.validate();
-    }, this.#form.config.intermediateValidationDelayMs);
+      this.finalizeChangeIfNeeded();
+    }, this.#getFinalizationDelayMs());
   }
 
-  cancelDelayedValidation() {
+  #cancelFinalizeChangeWithDelay() {
     if (this.#timerId) {
       clearTimeout(this.#timerId);
       this.#timerId = null;
