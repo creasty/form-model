@@ -1,7 +1,15 @@
+/*
+ * Everything needed to make the *standard* bindings look right on top of Pico CSS.
+ *
+ * The bindings emit `id` / `htmlFor`, `aria-invalid` and `aria-errormessage`;
+ * these few rules hang off those attributes and nothing else. Layout for this
+ * particular example lives in example-layout.css.
+ */
 .picocss-scope {
   padding: 32px;
 
   button {
+    /* Keep hover events on a disabled submit button, so it can still report errors. */
     &:disabled {
       pointer-events: all !important;
     }
@@ -13,8 +21,8 @@
       background-image: var(--pico-icon-invalid);
       background-size: 1em auto;
       background-repeat: no-repeat;
-      vertical-align: -.125em;
-      margin-inline-end: calc(var(--pico-spacing)* .5);
+      vertical-align: -0.125em;
+      margin-inline-end: calc(var(--pico-spacing) * 0.5);
     }
   }
 
@@ -28,25 +36,11 @@
       color: var(--pico-del-color);
     }
 
-    &:has([aria-invalid="true"]) small {
-      color: var(--pico-del-color);
+    small {
+      display: block;
     }
-  }
-
-  .sub-form {
-    /* BEGIN: Copied from 'Card' styles */
-    margin-bottom: var(--pico-block-spacing-vertical);
-    padding: var(--pico-block-spacing-vertical) var(--pico-block-spacing-horizontal);
-    border-radius: var(--pico-border-radius);
-    background: var(--pico-card-background-color);
-    box-shadow: var(--pico-card-box-shadow);
-    /* END: Copied from 'Card' styles */
-
-    &[data-deletable="true"] {
-      display: grid;
-      align-items: start;
-      gap: var(--pico-block-spacing-vertical) var(--pico-block-spacing-horizontal);
-      grid-template-columns: 1fr auto;
+    small.error {
+      color: var(--pico-del-color);
     }
   }
 }
