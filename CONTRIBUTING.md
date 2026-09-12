@@ -95,10 +95,10 @@ To publish a production build, please follow these steps (apologies for the manu
 
 Two sites are deployed to Cloudflare Pages by the [deploy](https://github.com/creasty/mobx-sentinel/actions/workflows/deploy.yml) workflow:
 
-| Site | Source | Built by | Deployed to |
-| ---- | ------ | -------- | ----------- |
-| API doc | `packages/*` (TSDoc) | `pnpm doc` | [mobx-sentinel.creasty.com](https://mobx-sentinel.creasty.com) |
-| Example app | [apps/example/](./apps/example) | `pnpm --filter example pages:build` | [example.mobx-sentinel.creasty.com](https://example.mobx-sentinel.creasty.com) |
+| Pages project | Source | Built by | Deployed to |
+| ------------- | ------ | -------- | ----------- |
+| `mobx-sentinel-apidoc` | `packages/*` (TSDoc) | `pnpm doc` | [mobx-sentinel.creasty.com](https://mobx-sentinel.creasty.com) |
+| `mobx-sentinel-example` | [apps/example/](./apps/example) | `pnpm --filter example pages:build` | [example.mobx-sentinel.creasty.com](https://example.mobx-sentinel.creasty.com) |
 
 Every branch push deploys both. Pushes to `main` go to production; every other branch gets a
 preview deployment, whose URL is reported back on the commit and on the pull request.

@@ -24,12 +24,12 @@ jobs:
         include:
           # `project` is the Pages project name, as listed in Cloudflare's
           # Workers & Pages dashboard -- not the custom domain.
-          - name: doc
-            project: mobx-sentinel-doc # FIXME: a guess -- check the dashboard
+          - name: apidoc
+            project: mobx-sentinel-apidoc
             build: pnpm doc
             output: docs
           - name: example
-            project: mobx-sentinel
+            project: mobx-sentinel-example
             build: pnpm --filter example pages:build
             output: apps/example/.vercel/output/static
     steps:
@@ -37,7 +37,8 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.x
+          # Mirrors the NODE_VERSION the Pages build used.
+          node-version: 20.14.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
