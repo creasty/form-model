@@ -90,3 +90,23 @@ To publish a production build, please follow these steps (apologies for the manu
 1. Merge the PR into the `main` branch
 1. Manually trigger [publish](https://github.com/creasty/mobx-sentinel/actions/workflows/publish.yml) on the `main` branch
 1. Create a new release on GitHub UI
+
+## [Maintainer Only] Deployments
+
+Two sites are deployed to Cloudflare Pages by the [deploy](https://github.com/creasty/mobx-sentinel/actions/workflows/deploy.yml) workflow:
+
+| Pages project | Source | Built by | Deployed to |
+| ------------- | ------ | -------- | ----------- |
+| `mobx-sentinel-apidoc` | `packages/*` (TSDoc) | `pnpm doc` | [mobx-sentinel.creasty.com](https://mobx-sentinel.creasty.com) |
+| `mobx-sentinel-example` | [apps/example/](./apps/example) | `pnpm --filter example pages:build` | [example.mobx-sentinel.creasty.com](https://example.mobx-sentinel.creasty.com) |
+
+Every branch push deploys both. Pushes to `main` go to production; every other branch gets a
+preview deployment, whose URL is reported back on the commit and on the pull request.
+
+Deployments are direct uploads via [wrangler](https://developers.cloudflare.com/workers/wrangler/),
+so they require two repository secrets: `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`
+(an account token with the *Cloudflare Pages: Edit* permission).
+
+Everything else -- custom domains, production branch, compatibility flags -- remains a per-project
+setting in the Cloudflare dashboard. Build-time settings do not: the Node version lives in the
+workflow, and the dashboard's build variables no longer apply.
