@@ -21,3 +21,30 @@ jobs:
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  # `test` above only ever sees the one MobX the lockfile pins. The packages
+  # support a range, and getMobxObservableAnnotations reads MobX internals that
+  # do not behave the same across it: 6.16 applies stage3 annotations lazily,
+  # so `values_` is empty until each property is first read, while 6.11 has
+  # them all up front. Each version therefore exercises a different path, and
+  # only running one of them hides a break in the other. These two are the
+  # ends of the peer range -- its floor, and the newest 6.x.
+  test-mobx:
+    name: test (mobx ${{ matrix.mobx }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mobx: ['6.11.0', '6.16.1']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      # An override rather than an install into each package, so the peer
+      # MobX that all three resolve is the one under test.
+      - run: pnpm pkg set "pnpm.overrides.mobx=${{ matrix.mobx }}"
+      # The override moves resolution, so the lockfile cannot be frozen here.
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm test
