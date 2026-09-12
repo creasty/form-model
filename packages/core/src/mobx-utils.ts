@@ -88,14 +88,38 @@ export function* getMobxObservableAnnotations(
   const adm = (target as any)[$mobx] as ObservableObjectAdministration;
 
   if (typeof adm !== "object" || !adm) return;
+
+  const yielded = new Set<string | symbol | number>();
+
+  // Since 6.16, MobX applies the annotations of stage3 decorators lazily: `values_` stays empty
+  // until each property is first read, and until then the pending keys only live in these maps.
+  // `getObservablePropValue_` is what materializes an entry and reads it; going through the
+  // target instead would miss ECMAScript private keys, which are not reachable from the outside.
+  const getObservablePropValue = (adm as any).getObservablePropValue_;
+  if (typeof getObservablePropValue === "function") {
+    for (const lazyKeys of [(adm as any).lazyObservableKeys_, (adm as any).lazyComputedKeys_]) {
+      if (!(lazyKeys instanceof Map)) continue;
+      // Snapshot, as materializing a key deletes it from the map being iterated.
+      for (const key of [...lazyKeys.keys()]) {
+        if (typeof key !== "string" && typeof key !== "symbol" && typeof key !== "number") continue;
+        if (yielded.has(key)) continue;
+        yielded.add(key);
+        yield [key, () => getObservablePropValue.call(adm, key)];
+      }
+    }
+  }
+
   if (!("values_" in adm)) return;
   const values = adm.values_;
   if (!(values instanceof Map)) return;
 
-  for (const [key, value] of values) {
+  // Snapshot, as consuming the keys yielded above inserts into `values_`.
+  for (const [key, value] of [...values]) {
     if (typeof key !== "string" && typeof key !== "symbol" && typeof key !== "number") continue;
     if (typeof value !== "object" || !value) continue;
     if (!("get" in value && typeof value.get === "function")) continue;
+    if (yielded.has(key)) continue;
+    yielded.add(key);
     const getValue = () => (key in target ? (target as any)[key] : value.get());
     yield [key, getValue];
   }

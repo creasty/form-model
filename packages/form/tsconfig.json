@@ -2,10 +2,9 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "dist",
-    "moduleResolution": "node",
-    "module": "commonjs",
+    "moduleResolution": "bundler",
     "types": ["vitest/globals"]
   },
-  "include": ["src", "*.config.{ts,mts}"],
+  "include": ["src", "*.config.ts", "*.config.mts"],
   "exclude": ["node_modules", "dist"]
 }

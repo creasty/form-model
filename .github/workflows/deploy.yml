@@ -38,8 +38,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           # The Pages build pinned NODE_VERSION=20.14.0, but wrangler requires
-          # >=22 and Node 20 is EOL, so both builds move up.
-          node-version: 22.x
+          # >=22 and Node 20 is EOL, so both builds move up. The version now
+          # lives in .node-version, shared with the other workflows.
+          node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
