@@ -22,9 +22,20 @@ export default ts.config(
   },
   {
     files: ["./packages/core/**/*.ts"],
+    ignores: ["./packages/core/test-stage3/**"],
     languageOptions: {
       parserOptions: {
         project: "./packages/core/tsconfig.json",
+      },
+    },
+    rules: {},
+  },
+  {
+    // Kept out of the package's own tsconfig, which enables experimentalDecorators.
+    files: ["./packages/core/test-stage3/**/*.ts"],
+    languageOptions: {
+      parserOptions: {
+        project: "./packages/core/test-stage3/tsconfig.json",
       },
     },
     rules: {},

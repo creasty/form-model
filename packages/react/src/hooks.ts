@@ -45,6 +45,11 @@ export function useFormHandler<T extends object>(
 ): void;
 export function useFormHandler<T extends object>(form: Form<T>, event: any, handler: any) {
   const handlerRef = useRef(handler);
+  // Assigning during render is what keeps the handler current without the caller memoizing it.
+  // eslint-plugin-react-hooks 7 flags this: a render that React throws away still leaves its
+  // handler behind. Moving the assignment into an effect would fix that, but it also delays the
+  // update to after commit, so it is left as a deliberate behavioral decision to make separately.
+  // eslint-disable-next-line react-hooks/refs
   handlerRef.current = handler;
 
   useEffect(() => {
