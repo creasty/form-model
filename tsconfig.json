@@ -8,6 +8,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    // tsup's dts build injects `baseUrl` unconditionally, which TypeScript 6 rejects as
+    // deprecated. Nothing here sets it, so this only silences that. TypeScript 7 stops
+    // accepting the flag, which will force a recheck once tsup drops the injection.
+    "ignoreDeprecations": "6.0"
   }
 }

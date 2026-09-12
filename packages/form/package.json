@@ -32,7 +32,7 @@
     "build": "tsup"
   },
   "dependencies": {
-    "uuid": "^11.0.4"
+    "uuid": "^11.1.1"
   },
   "peerDependencies": {
     "@mobx-sentinel/core": "workspace:~",
@@ -40,11 +40,11 @@
   },
   "devDependencies": {
     "@mobx-sentinel/core": "workspace:~",
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.20.2",
     "@vitest/coverage-v8": "^2.1.8",
-    "mobx": "^6.12.3",
-    "tsup": "^8.3.5",
-    "typescript": "^5.5.0",
+    "mobx": "^6.16.1",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
     "vitest": "^2.1.8"
   }
 }
