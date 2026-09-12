@@ -107,5 +107,6 @@ Deployments are direct uploads via [wrangler](https://developers.cloudflare.com/
 so they require two repository secrets: `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`
 (an account token with the *Cloudflare Pages: Edit* permission).
 
-Everything else -- custom domains, production branch, compatibility flags, build-time environment
-variables -- remains a per-project setting in the Cloudflare dashboard.
+Everything else -- custom domains, production branch, compatibility flags -- remains a per-project
+setting in the Cloudflare dashboard. Build-time settings do not: the Node version lives in the
+workflow, and the dashboard's build variables no longer apply.
