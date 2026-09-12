@@ -7,44 +7,64 @@ on:
       - main
 
 jobs:
+  # The packages support a MobX range, and getMobxObservableAnnotations reads
+  # MobX internals that do not behave the same across it: 6.16 applies stage3
+  # annotations lazily, so `values_` is empty until each property is first read,
+  # while 6.11 has them all up front. Each version takes a different path
+  # through that function, and running only one hides a break in the other.
+  #
+  # So: what the lockfile pins, which is what ships, plus both ends of the peer
+  # range. `test-ok` below is the one to require on a branch rule.
   test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm test
-      - uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-  # `test` above only ever sees the one MobX the lockfile pins. The packages
-  # support a range, and getMobxObservableAnnotations reads MobX internals that
-  # do not behave the same across it: 6.16 applies stage3 annotations lazily,
-  # so `values_` is empty until each property is first read, while 6.11 has
-  # them all up front. Each version therefore exercises a different path, and
-  # only running one of them hides a break in the other. These two are the
-  # ends of the peer range -- its floor, and the newest 6.x.
-  test-mobx:
-    name: test (mobx ${{ matrix.mobx }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        mobx: ['6.11.0', '6.16.1']
+        # No `name:` on the job -- a matrix already names its legs after the
+        # values, so these read as `test (lockfile)`, `test (v6.11.0)`, ...
+        mobx: [lockfile, v6.11.0, v6.16.1]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-      # An override rather than an install into each package, so the peer
-      # MobX that all three resolve is the one under test.
-      - run: pnpm pkg set "pnpm.overrides.mobx=${{ matrix.mobx }}"
-      # The override moves resolution, so the lockfile cannot be frozen here.
-      - run: pnpm install --no-frozen-lockfile
+      # An override rather than an install into each package, so the peer MobX
+      # that all three packages resolve is the one under test. The version is
+      # the leg itself with its `v` stripped.
+      - if: matrix.mobx != 'lockfile'
+        env:
+          MOBX: ${{ matrix.mobx }}
+        run: pnpm pkg set "pnpm.overrides.mobx=${MOBX#v}"
+      # An override moves resolution, so only the lockfile leg can freeze.
+      - run: pnpm install ${{ matrix.mobx == 'lockfile' && '--frozen-lockfile' || '--no-frozen-lockfile' }}
+      - run: pnpm build
       - run: pnpm test
+      # Only the lockfile leg reports. Codecov merges every upload for a commit,
+      # so letting the other legs report would blend coverage measured against
+      # three different MobX versions into one number.
+      - if: matrix.mobx == 'lockfile'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # Something for a branch rule to require. Each leg above reports under its own
+  # name -- `test (v6.11.0)` and so on -- which changes whenever the matrix
+  # does, and a required check that no longer reports is not enforced. This job
+  # has one stable name that covers every leg.
+  #
+  # `always()` matters: without it this job is skipped when a leg fails, and a
+  # skipped required check does not block a merge, so the gate would pass
+  # exactly when it should not. Running unconditionally and asserting the result
+  # means a failed, cancelled or skipped matrix all land as a failure here.
+  test-ok:
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      # For a matrix, `result` is success only when every leg succeeded.
+      - env:
+          RESULT: ${{ needs.test.result }}
+        run: |
+          echo "test: $RESULT"
+          [ "$RESULT" = 'success' ]
