@@ -45,7 +45,7 @@
   },
   "peerDependencies": {
     "@mobx-sentinel/form": "workspace:~",
-    "mobx": "^6.0.0",
+    "mobx": "^6.11.0",
     "mobx-react-lite": "^4.0.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"

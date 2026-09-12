@@ -36,7 +36,7 @@
   },
   "peerDependencies": {
     "@mobx-sentinel/core": "workspace:~",
-    "mobx": "^6.0.0"
+    "mobx": "^6.11.0"
   },
   "devDependencies": {
     "@mobx-sentinel/core": "workspace:~",
