@@ -1,0 +1,93 @@
+name: deploy
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+# A branch only ever needs its newest commit deployed.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pages:
+    name: pages (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # `project` is the Pages project name, as listed in Cloudflare's
+          # Workers & Pages dashboard -- not the custom domain.
+          - name: doc
+            project: mobx-sentinel-doc # FIXME: a guess -- check the dashboard
+            build: pnpm doc
+            output: docs
+          - name: example
+            project: mobx-sentinel
+            build: pnpm --filter example pages:build
+            output: apps/example/.vercel/output/static
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Both artifacts are built off the packages' dist, so build them first.
+      - run: pnpm build
+      - run: ${{ matrix.build }}
+
+      # Cloudflare decides production vs. preview by comparing `--branch`
+      # against the project's production branch.
+      - name: Deploy
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ${{ matrix.output }} --project-name=${{ matrix.project }} --branch=${{ github.ref_name }}
+
+      # Surface the URL on the commit and on any PR the branch belongs to,
+      # the way the Git integration used to.
+      - name: Report
+        continue-on-error: true
+        uses: actions/github-script@v9
+        env:
+          NAME: ${{ matrix.name }}
+          ENVIRONMENT: ${{ steps.deploy.outputs.pages-environment }}
+          URL: ${{ steps.deploy.outputs.pages-deployment-alias-url || steps.deploy.outputs.deployment-url }}
+        with:
+          script: |
+            const { NAME, ENVIRONMENT, URL } = process.env;
+            const production = ENVIRONMENT === 'production';
+
+            await core.summary
+              .addHeading(`${NAME} (${ENVIRONMENT})`, 3)
+              .addLink(URL, URL)
+              .write();
+
+            const { data: deployment } = await github.rest.repos.createDeployment({
+              ...context.repo,
+              ref: context.sha,
+              environment: `${NAME} (${ENVIRONMENT})`,
+              description: 'Cloudflare Pages',
+              production_environment: production,
+              transient_environment: !production,
+              auto_merge: false,
+              required_contexts: [],
+            });
+            await github.rest.repos.createDeploymentStatus({
+              ...context.repo,
+              deployment_id: deployment.id,
+              state: 'success',
+              environment_url: URL,
+              description: 'Cloudflare Pages',
+            });
