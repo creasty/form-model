@@ -34,63 +34,118 @@ This library aims to solve these problems through a model-centric design that pr
 
 ## Overview
 
-[apps/example/](./apps/example) is deployed at [example.mobx-sentinel.creasty.com](https://example.mobx-sentinel.creasty.com).
+[apps/example/](./apps/example) is a working invoice editor — cross-field rules, a CRM lookup that cancels itself, nested and repeated sub-forms, server-reported conflicts, dirty tracking and autosave. It is deployed at [example.mobx-sentinel.creasty.com](https://example.mobx-sentinel.creasty.com). The code below is condensed from it.
 
 ### Model
 
+Your model stays a model: plain MobX classes that own the data, the derived values and the rules. The library adds two things — an annotation that lets it see through to nested objects, and validation handlers declared next to the data they constrain.
+
 ```typescript
-import { action, observable, makeObservable } from "mobx";
-import { nested, makeValidatable } from "@mobx-sentinel/core";
+import { action, computed, makeObservable, observable } from "mobx";
+import { makeValidatable, nested, unwatch } from "@mobx-sentinel/core";
 
-export class Sample {
-  @observable name: string = "";
-  @observable confirmed: boolean = false;
+export class Invoice {
+  @observable customerEmail = "";
+  @observable issuedOn = startOfToday();
+  @observable paymentTerms: PaymentTerms = "NET_30";
+  @observable customDueOn: Date | null = null;
 
-  // Nested/dynamic models can be tracked with @nested annotation
-  @nested @observable nested = new Other();
-  @nested @observable items = [new Other()];
+  // Nested and dynamic models are tracked through the `@nested` annotation.
+  // Objects, arrays, sets, maps and boxed observables all work.
+  @nested @observable billTo = new PostalAddress();
+  @nested @observable lineItems = [new LineItem()];
 
   constructor() {
     makeObservable(this);
 
-    // 'Reactive validation' is implemented here
+    // 'Reactive validation' is implemented here.
     makeValidatable(this, (b) => {
-      if (!this.name.trim()) b.invalidate("name", "Name is required");
-      if (this.name.length > 50) b.invalidate("name", "Name is too long");
-      if (this.confirmed === false) b.invalidate("confirmed", "Confirmation is required");
-      if (this.items.length === 0) b.invalidate("items", "Select at least one item");
+      if (!EMAIL_PATTERN.test(this.customerEmail)) {
+        b.invalidate("customerEmail", "Enter a valid email address");
+      }
+      // Cross-field rules are ordinary code — no resolver, no schema gymnastics.
+      if (this.paymentTerms === "CUSTOM" && this.customDueOn && this.customDueOn < this.issuedOn) {
+        b.invalidate("customDueOn", "The due date cannot precede the issue date");
+      }
+      // And rules that span the children belong to the parent, where they can see all of them.
+      if (this.total <= 0) {
+        b.invalidate("lineItems", "The invoice total must be greater than zero");
+      }
     });
+
+    // Asynchronous rules compose on top of the synchronous ones.
+    // Every keystroke supersedes the request before it: the Validator throttles
+    // the calls and aborts the one still in flight.
+    makeValidatable(
+      this,
+      () => this.customerEmail,
+      async (email, b, abortSignal) => {
+        const response = await fetch(`/api/customers/${email}`, { signal: abortSignal });
+        if (!response.ok) {
+          b.invalidate("customerEmail", "No customer in the CRM uses this address");
+        }
+      },
+      { initialRun: false }
+    );
+  }
+
+  // Derived amounts are business logic, not form state.
+  // `@unwatch` keeps them out of change detection, so the change report below
+  // shows what the user edited rather than everything that recomputed.
+  @unwatch
+  @computed
+  get total(): number {
+    return this.lineItems.reduce((sum, item) => sum + item.amount * (1 + item.taxRate), 0);
   }
 
   @action.bound
-  addNewItem() {
-    this.items.push(new Other());
+  addLineItem() {
+    this.lineItems.push(new LineItem());
   }
 }
 ```
 
-```typescript
-const model = new Sample();
-const watcher = Watcher.get(model);
-const validator = Validator.get(model);
+### Change detection and validation
 
-// Do something with the model...
+Both are available on any model, with or without a form — which is what makes them usable for autosave, sync, navigation guards and server round-trips.
+
+```typescript
+import { reaction, runInAction, when } from "mobx";
+import { unwatch, Validator, Watcher } from "@mobx-sentinel/core";
+
+const invoice = new Invoice();
+const watcher = Watcher.get(invoice);
+const validator = Validator.get(invoice);
+
 runInAction(() => {
-  model.name = "hello";
-  model.nested.title = "world";
+  invoice.customerEmail = "ap@northwind.example";
+  invoice.lineItems[0].quantity = 3;
 });
 
-// Check if the model has changed
+// What changed — through nested models and arrays alike.
 watcher.changed //=> true
-watcher.changedKeyPaths //=> Set ["name", "nested.title"]
+watcher.changedKeyPaths //=> Set ["customerEmail", "lineItems.0.quantity"]
 
-// Check if the model is valid
+// What is wrong — aggregated from every nested validator.
 await when(() => !validator.isValidating);
 validator.isValid //=> false
-validator.invalidKeyPaths //=> Set ["confirmed", ..., "items.0.title"]
+validator.invalidKeyPaths //=> Set ["billTo.postalCode", "lineItems.0.unitPrice"]
+validator.firstErrorMessage //=> "ZIP code is required"
+
+// `changedTick` is the hook an autosave, an undo stack or a sync loop needs.
+reaction(
+  () => watcher.changedTick,
+  () => saveDraft(invoice)
+);
+
+// ...and `unwatch()` is how you write to the model without it counting as an edit.
+unwatch(() => invoice.restoreDraft(draft));
+watcher.changed //=> false — the invoice is populated, the form is still pristine
 ```
 
 ### Form
+
+The form layer is the last mile: it knows when to show an error, when the submit button may be pressed, and how to attach a value to an input. It holds no data of its own.
 
 ```tsx
 import "@mobx-sentinel/react/dist/extension";
@@ -99,66 +154,59 @@ import { observer } from "mobx-react-lite";
 import { Form } from "@mobx-sentinel/form";
 import { useFormHandler } from "@mobx-sentinel/react";
 
-const SampleForm: React.FC<{ model: Sample }> = observer(({ model }) => {
-  // Get the form instance for the model.
+const InvoiceForm: React.FC<{ model: Invoice }> = observer(({ model }) => {
+  // One line to attach a form to a model.
+  // No provider, no context, no schema, no field registration.
   const form = Form.get(model);
 
-  // Form submission logic is implemented here.
+  // Submission is a lifecycle rather than a callback: `willSubmit` can veto it,
+  // `submit` handlers run serially with an AbortSignal, `didSubmit` sees the outcome.
   // When you have view-models, form.addHandler() API is also available.
   useFormHandler(form, "submit", async (abortSignal) => {
-    // Serialize the model and send it to a server...
-    return true;
+    const response = await fetch("/api/invoices", {
+      method: "POST",
+      body: JSON.stringify(model),
+      signal: abortSignal,
+    });
+    return response.ok;
   });
 
   return (
     <>
       <div className="field">
-        {/* Binding adds proper aria- attributes */}
-        <label {...form.bindLabel(["name", "confirmed"])}>Inputs</label>
+        {/* Bindings add the proper aria- attributes and tie the label to the input. */}
+        <label {...form.bindLabel(["customerEmail"])}>Billing contact</label>
         <input
-         {...form.bindInput("name", {
-            getter: () => model.name, // Get the value from the model.
-            setter: (v) => (model.name = v), // Write the value to the model.
+          {...form.bindInput("customerEmail", {
+            getter: () => model.customerEmail, // Get the value from the model.
+            setter: (v) => (model.customerEmail = v), // Write the value to the model.
           })}
         />
-        {/* Displays error messages when appropriate */}
-        <ErrorText errors={form.getErrors("name")} />
-        <input
-          {...form.bindCheckBox("confirmed", {
-            getter: () => model.confirmed,
-            setter: (v) => (model.confirmed = v),
-          })}
-        />
-        <ErrorText errors={form.getErrors("confirmed")} />
+        {/* Errors appear when the user is ready for them, not on the first keystroke. */}
+        <ErrorText errors={form.getErrors("customerEmail")} />
       </div>
 
-      <div className="field">
-        <h4>Nested form</h4>
-        {/* No need to pass the parent form instance to the sub-form. */}
-        <OtherForm model={model.nested} />
-      </div>
+      {/* A nested model gets its own form. Nothing is threaded down from the parent. */}
+      <AddressForm model={model.billTo} />
 
-      <div className="field">
-        <h4>Dynamic form</h4>
-        <ErrorText errors={form.getErrors("items")} />
+      {/* A dynamic list is just an array on the model: mutate it and the forms follow. */}
+      {model.lineItems.map((item) => (
+        <LineItemForm key={item.id} model={item} />
+      ))}
+      <button onClick={model.addLineItem}>Add a line</button>
 
-        {model.items.map((item, i) => (
-          <OtherForm key={i} model={item} />
-        ))}
-
-        {/* Add a new form by mutating the model directly. */}
-        <button onClick={model.addNewItem}>Add a new form</button>
-      </div>
-
-      <button {...form.bindSubmitButton()}>Submit</button>
+      {/* Disabled while the form is invalid, pristine or busy.
+          Hovering it reveals every outstanding error at once. */}
+      <button {...form.bindSubmitButton()}>Send invoice</button>
     </>
   );
 });
 ```
 
 ```tsx
-const OtherForm: React.FC<{ model: Other }> = observer(({ model }) => {
-  // Forms are completely independent. No child-to-parent dependency
+const AddressForm: React.FC<{ model: PostalAddress }> = observer(({ model }) => {
+  // Forms are looked up per model and are completely independent.
+  // No child-to-parent dependency, yet the parent's validity and dirtiness include this one.
   const form = Form.get(model);
 
   return (...);

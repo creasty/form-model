@@ -1,0 +1,120 @@
+/*
+ * Layout for the invoice example only.
+ *
+ * None of this is required to use the library — see picocss-custom.css for the
+ * handful of rules the standard bindings actually need.
+ */
+.picocss-scope {
+  /* The form gets more room than the debug panel; both stack when narrow. */
+  .layout {
+    display: grid;
+    gap: var(--pico-grid-column-gap);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+  @media (max-width: 1024px) {
+    .layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* Lay fields out side by side; they collapse on narrow screens. */
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    gap: 0 var(--pico-spacing);
+
+    > * {
+      flex: 1 1 7rem;
+    }
+    > .wide {
+      flex: 3 1 12rem;
+    }
+    > button {
+      flex: 0 0 auto;
+    }
+  }
+
+  .choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 24px;
+  }
+
+  .sub-form {
+    /* BEGIN: Copied from 'Card' styles */
+    margin-bottom: var(--pico-block-spacing-vertical);
+    padding: var(--pico-block-spacing-vertical) var(--pico-block-spacing-horizontal);
+    border-radius: var(--pico-border-radius);
+    background: var(--pico-card-background-color);
+    box-shadow: var(--pico-card-box-shadow);
+    /* END: Copied from 'Card' styles */
+  }
+
+  .line-item-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(var(--pico-spacing) * 0.5);
+
+    > small.error {
+      color: var(--pico-del-color);
+    }
+    > span {
+      margin-inline-start: auto;
+      font-variant-numeric: tabular-nums;
+    }
+    > button {
+      flex: 0 0 auto;
+      width: auto;
+      margin-bottom: 0;
+      padding: calc(var(--pico-spacing) * 0.25) calc(var(--pico-spacing) * 0.75);
+      font-size: 0.75em;
+    }
+  }
+
+  .invoice-header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: var(--pico-spacing);
+  }
+  .invoice-header-status {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .totals {
+    width: auto;
+    margin-inline-start: auto;
+    font-variant-numeric: tabular-nums;
+
+    td {
+      text-align: right;
+    }
+  }
+
+  .receipt {
+    padding: calc(var(--pico-spacing) * 0.5) var(--pico-spacing);
+    border-radius: var(--pico-border-radius);
+    background: var(--pico-mark-background-color);
+    color: var(--pico-mark-color);
+  }
+
+  .hints {
+    margin-top: 16px;
+    color: var(--pico-muted-color);
+  }
+
+  .debugger {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+  }
+
+  .key-paths {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
