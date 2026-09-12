@@ -39,10 +39,11 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.2",
-    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/coverage-v8": "^5.0.0",
     "mobx": "^6.16.1",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
-    "vitest": "^2.1.8"
+    "vite": "^7.3.6",
+    "vitest": "^5.0.0"
   }
 }
