@@ -114,7 +114,14 @@ Two guards, each answering with 👎 and a one-line reason:
 - **Forks are refused.** The workflow file comes from `main` and a pull request cannot change it --
   but it can change everything that file runs, from `tsup.config.ts` to dependency lifecycle
   scripts, and all of it runs with npm publish rights. The `workflow_dispatch` route never offered a
-  fork's code either. To publish a fork's branch, push it to this repository first.
+  fork's code either.
+
+  Pushing a fork's branch to this repository turns it into a pull request `/publish-dev` will
+  accept, and that push is where the trust decision actually gets made -- not the review. Even
+  `pnpm install --frozen-lockfile` runs that branch's root `prepare` script and its dependencies'
+  `postinstall` scripts, inside a job that can mint the npm token, because the trusted publisher
+  checks the workflow's OIDC claims and not the code's. So read the build scripts, not just the
+  diff, before pushing someone else's branch here.
 
 `workflow_dispatch` still works too, for a branch with no pull request open.
 
@@ -136,6 +143,13 @@ Leaving `bump_version` empty skips all of the above and publishes the dispatched
 version as-is. That is the repair path for a bump that merged but never shipped, and it is also
 how a version bumped by hand in an ordinary pull request gets released; on that path `publish`
 creates the tag and drafts the release itself.
+
+| Trigger | What happens |
+| ------- | ------------ |
+| `publish` dispatched with `bump_version` | bumps, opens the pull request with auto-merge on, dispatches `push` on that branch, and drafts `vX.Y.Z` -- the tag name is reserved but bound to no commit. Nothing is published. |
+| the bump pull request merging | nothing publishes. Merged by auto-merge it starts no run at all; merged by hand it starts `push` and `deploy` as usual. |
+| the draft release being published | GitHub creates `vX.Y.Z` at main's HEAD as it stands, which fires `publish` again and ships to npm. |
+| `publish` dispatched with `bump_version` empty | publishes the dispatched ref to npm straight away, then creates `vX.Y.Z` at that commit and drafts the release. The repair path, not part of the sequence above. |
 
 #### Why the release, and not the merge
 
