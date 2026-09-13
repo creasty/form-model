@@ -16,8 +16,6 @@ jobs:
         with:
           node-version-file: .node-version
           registry-url: 'https://registry.npmjs.org'
-      # See publish.yml: the npm that `pnpm publish` shells out to is what
-      # performs the OIDC exchange, and Node 22's bundled npm is too old.
       - run: npm install -g npm@12.0.2
       - run: pnpm install --frozen-lockfile
 
@@ -26,7 +24,6 @@ jobs:
           ./script/bump dev
       - run: pnpm build
 
-      # No NODE_AUTH_TOKEN -- trusted publishing. See publish.yml.
       - name: Publish packages
         run: pnpm publish --tag dev --recursive --access public --no-git-checks
         env:

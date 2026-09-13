@@ -89,6 +89,12 @@ the workflow that publishes it -- `publish.yml` and `publish-dev.yml` are separa
 package missing its entry fails with a `404` on the upload, because npm answers unauthorized writes
 to a scoped package that way rather than admitting the package exists.
 
+Both workflows install npm before publishing, which is load-bearing rather than incidental.
+`pnpm publish` resolves the `workspace:` specifiers and packs, then hands the tarball to
+`npm publish`; pnpm has no OIDC of its own, so whichever npm is on `PATH` performs the exchange.
+Trusted publishing needs npm 11.5.1 or newer, and the Node in `.node-version` ships an older one,
+so removing that step breaks publishing with the same `404`.
+
 ### Dev version
 
 To test a build in your app, use [publish-dev](https://github.com/creasty/mobx-sentinel/actions/workflows/publish-dev.yml).\
