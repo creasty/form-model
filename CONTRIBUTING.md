@@ -97,18 +97,80 @@ so removing that step breaks publishing with the same `404`.
 
 ### Dev version
 
-To test a build in your app, use [publish-dev](https://github.com/creasty/mobx-sentinel/actions/workflows/publish-dev.yml).\
-Run on any branch, it will publish a dev version with the corresponding commit hash (`vX.Y.Z-dev-HHHHHHHH`).
+To test a build in your app, comment `/publish-dev` on the pull request.
+[publish-dev](https://github.com/creasty/mobx-sentinel/actions/workflows/publish-dev.yml) answers on
+the comment itself: 👀 while it runs, then 🚀 and a reply carrying the version and a `pnpm add` line
+for all three packages.
+
+The version is built from the **pull request's head commit**, not `main`: `X.Y.Z-dev-HHHHHHHH`, where
+`X.Y.Z` is whatever the packages currently carry. Running the command again on an unchanged head
+publishes nothing and replies with the version that is already there.
+
+Two guards, each answering with 👎 and a one-line reason:
+
+- **Write access is required.** The comment's `author_association` is only a pre-filter that avoids
+  spending a runner; the job then asks the API for the commenter's actual permission, because a
+  collaborator with read or triage access still reports as `COLLABORATOR`.
+- **Forks are refused.** The workflow file comes from `main` and a pull request cannot change it --
+  but it can change everything that file runs, from `tsup.config.ts` to dependency lifecycle
+  scripts, and all of it runs with npm publish rights. The `workflow_dispatch` route never offered a
+  fork's code either. To publish a fork's branch, push it to this repository first.
+
+`workflow_dispatch` still works too, for a branch with no pull request open.
 
 ### Production version
 
-To publish a production build, please follow these steps (apologies for the manual process):
+Dispatch [publish](https://github.com/creasty/mobx-sentinel/actions/workflows/publish.yml) with
+`bump_version` set to the new `X.Y.Z`, and it will
 
-1. Run `./script/bump X.Y.Z` (`X.Y.Z` being a new version) on your local
-1. Include the changes in your PR
-1. Merge the PR into the `main` branch
-1. Manually trigger [publish](https://github.com/creasty/mobx-sentinel/actions/workflows/publish.yml) on the `main` branch
-1. Create a new release on GitHub UI
+1. run `./script/bump X.Y.Z` and push `bump-version-X-Y-Z`,
+1. open a `Bump version X.Y.Z` pull request with auto-merge on, and dispatch `push` on that branch
+   so its checks report,
+1. draft a `vX.Y.Z` release with the `## Fixed` / `## Changed` skeleton above the generated
+   `## What's Changed`.
+
+Then, once that pull request has merged: write the notes and **publish the release**. Publishing it
+is what ships to npm and creates the tag -- merging on its own publishes nothing.
+
+Leaving `bump_version` empty skips all of the above and publishes the dispatched ref's current
+version as-is. That is the repair path for a bump that merged but never shipped, and it is also
+how a version bumped by hand in an ordinary pull request gets released; on that path `publish`
+creates the tag and drafts the release itself.
+
+#### Why the release, and not the merge
+
+Auto-merge performs the merge on behalf of `GITHUB_TOKEN`, and GitHub starts no workflow run from an
+event caused by its own token. So the bump landing on `main` cannot trigger anything. The same rule
+is why
+
+- `publish` dispatches `push` on the bump branch: the pull request raised no `pull_request` event,
+  so nothing would report `test-ok`, and a required check that never reports blocks the merge
+  forever. Push another commit to a bump branch and its new head has no checks again -- dispatch
+  `push` on it a second time.
+- `publish` dispatches `push` and `deploy` on `main` after a successful publish, standing in for the
+  runs the suppressed push would have started. Without it the API doc keeps printing the previous
+  version, since TypeDoc is configured with `includeVersion`.
+
+`workflow_dispatch` is one of only two triggers exempt from that rule, which is what makes both of
+those possible.
+
+#### What the guards refuse
+
+`./script/version` asserts that the three packages agree on a plain `X.Y.Z`, which is also what
+keeps a `-dev-` tree away from the `latest` tag. On top of that:
+
+| Situation | Outcome |
+| --------- | ------- |
+| the version is already on npm | skips and stays green -- npm is the authority on what has shipped |
+| `bump_version` names the current version, or its branch or tag already exists | refuses before touching anything |
+| `bump_version` is dispatched on a branch other than `main` | refuses -- the bump PR would carry that branch's commits too |
+| `vX.Y.Z` exists but npm has no such version | fails: an earlier publish stopped half way, so look before retrying |
+| a release's tag does not match the tree it tagged | fails, having published nothing |
+
+That last one is the sharp edge of publishing on the release: publish the draft before the bump
+pull request has merged and GitHub tags a `main` that still carries the old version. To recover,
+merge the pull request, delete the tag and the release, then dispatch `publish` with `bump_version`
+empty. The draft carries that warning in a note above the release notes.
 
 ## [Maintainer Only] Deployments
 
