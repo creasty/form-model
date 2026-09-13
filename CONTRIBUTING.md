@@ -76,6 +76,19 @@ Please ensure you cover the points in the following checklist:
 
 Packages are published to [npm](https://www.npmjs.com/org/mobx-sentinel).
 
+### Authentication
+
+Both workflows below authenticate with npm through
+[trusted publishing](https://docs.npmjs.com/trusted-publishers/), so there is no npm token to store
+or rotate: npm mints a short-lived OIDC token from the workflow's `id-token` permission and the
+registry checks it against the trusted publisher configured on each package.
+
+That configuration lives on npm, not in this repository. Each of `@mobx-sentinel/core`, `/form` and
+`/react` needs a trusted publisher for this repository under Settings → Trusted Publisher, naming
+the workflow that publishes it -- `publish.yml` and `publish-dev.yml` are separate entries. A
+package missing its entry fails with a `404` on the upload, because npm answers unauthorized writes
+to a scoped package that way rather than admitting the package exists.
+
 ### Dev version
 
 To test a build in your app, use [publish-dev](https://github.com/creasty/mobx-sentinel/actions/workflows/publish-dev.yml).\

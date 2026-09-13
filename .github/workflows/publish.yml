@@ -16,12 +16,19 @@ jobs:
         with:
           node-version-file: .node-version
           registry-url: 'https://registry.npmjs.org'
+      # `pnpm publish` resolves the workspace: specifiers and packs, then hands
+      # the tarball to `npm publish` -- it has no OIDC of its own. So the npm
+      # that Node ships decides whether trusted publishing is available, and
+      # .node-version's Node 22 ships npm 10.9.8, which predates it.
+      - run: npm install -g npm@12.0.2
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
 
+      # No NODE_AUTH_TOKEN: npm mints a short-lived OIDC token from the
+      # id-token permission above and exchanges it with the registry, which
+      # checks it against the trusted publisher configured for each package.
       - name: Publish packages
         run: pnpm publish --tag latest --recursive --access public --no-git-checks
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
